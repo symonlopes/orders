@@ -18,6 +18,7 @@ import java.util.HashSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -33,12 +34,9 @@ class OrdersApplicationTests {
 	@Test
 	public void shouldNotCreateOrderWithoutItems() throws Exception {
 
-		var order = Order.builder()
-				.sellerId("SYMON1110900")
-				.customerId("CUSTOMER998528411")
-				.items(new HashSet<>())
-				.createdAt(LocalDateTime.now())
-				.build();
+		var order = mockValidOrder();
+
+		order.setItems(null);
 
 		var result = mockMvc.perform(post("/api/order")
 				.contentType(MediaType.APPLICATION_JSON)
@@ -52,22 +50,47 @@ class OrdersApplicationTests {
 	}
 
 	@Test
-	public void shouldNotCreateOrderWithItemWithoutQuantity() throws Exception {
+	public void shouldCalculateOrderTotal() throws Exception {
 
-		var order = Order.builder()
-				.sellerId("SYMON1110900")
-				.customerId("CUSTOMER998528411")
-				.items(new HashSet<>())
-				.createdAt(LocalDateTime.now())
-				.build();
+		var order = mockValidOrder();
+
+		order.setItems(new HashSet<>());
 
 		order.getItems().add(
 				OrderItem.builder()
-						.code("EAN1231222")
-						.priceInCents(7800)
-						.description("CX MANTEIGA 12 UND")
+						.code("EAN12312221123A")
+						.quantity(10)
+						.unitPriceInCents(7800)
+						.description("PRODUTO PPP")
 						.build()
 		);
+
+		order.getItems().add(
+				OrderItem.builder()
+						.code("EAN12312AALKJHA")
+						.quantity(10)
+						.unitPriceInCents(35000)
+						.description("PRODUTO XYZ")
+						.build()
+		);
+
+		var result = mockMvc.perform(post("/api/order")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(order)))
+				.andExpect(status().isCreated())
+				.andReturn();
+
+
+		var returned =  objectMapper.readValue(result.getResponse().getContentAsString(), Order.class);
+		assertEquals(428000, returned.getTotalInCents(), "Order total does not match");
+	}
+
+	@Test
+	public void shouldNotCreateOrderWithItemWithoutQuantity() throws Exception {
+
+		var order = mockValidOrder();
+
+		order.getItems().stream().findFirst().ifPresent(item -> {item.setQuantity(0);});
 
 		var result = mockMvc.perform(post("/api/order")
 						.contentType(MediaType.APPLICATION_JSON)
@@ -83,21 +106,7 @@ class OrdersApplicationTests {
 	@Test
 	public void shouldSaveAnOrderSuccessfully() throws Exception {
 
-		var order = Order.builder()
-				.sellerId("SYMON1110900")
-				.customerId("CUSTOMER998528411")
-				.items(new HashSet<>())
-				.createdAt(LocalDateTime.now())
-				.build();
-
-		order.getItems().add(
-				OrderItem.builder()
-						.code("EAN1231222")
-						.quantity(10)
-						.priceInCents(7800)
-						.description("CX MANTEIGA 12 UND")
-						.build()
-		);
+		var order = mockValidOrder();
 
 		var result = mockMvc.perform(post("/api/order")
 				.contentType(MediaType.APPLICATION_JSON)
@@ -108,6 +117,45 @@ class OrdersApplicationTests {
 		var returnedItem =  objectMapper.readValue(result.getResponse().getContentAsString(), Order.class);
 
 		assertNotNull(returnedItem.getId(), "Order id must not be null");
+	}
+
+
+	private static Order mockValidOrder() {
+		var order = Order.builder()
+				.sellerId("SYMON1110900")
+				.customerId("CUSTOMER998528411")
+				.items(new HashSet<>())
+				.createdAt(LocalDateTime.now())
+				.build();
+
+		order.getItems().add(
+				OrderItem.builder()
+						.code("EAN12312221123A")
+						.quantity(10)
+						.unitPriceInCents(7800)
+						.description("PRODUTO PPP")
+						.build()
+		);
+
+		order.getItems().add(
+				OrderItem.builder()
+						.code("EAN12312AALKJHA")
+						.quantity(30)
+						.unitPriceInCents(35000)
+						.description("PRODUTO XYZ")
+						.build()
+		);
+
+		order.getItems().add(
+				OrderItem.builder()
+						.code("EAN12312QQADSWS")
+						.quantity(2)
+						.unitPriceInCents(5500)
+						.description("PRODUTO AJU")
+						.build()
+		);
+
+		return order;
 	}
 
 }

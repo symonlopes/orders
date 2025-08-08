@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -23,13 +24,15 @@ public class Order {
 
     @Id
     private String id;
+
+    @Field("createdAt")
     private LocalDateTime createdAt;
 
     @NotEmpty(message = "Order must contain at least one item")
     @Builder.Default
     @Valid
     private Set<OrderItem> items = new HashSet<>();
-    private OrderStatus orderStatus;
+    private OrderStatus status;
     private Integer totalInCents;
 
     @NotBlank(message = "Seller ID is required")

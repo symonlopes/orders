@@ -16,7 +16,7 @@ import java.util.Objects;
 public class OrderItem {
 
     @NotBlank(message = "Product code cannot be ampty.")
-    @Size(min = 10, max = 10, message = "Product code must have 10 characters.")
+    @Size(min = 15, max = 15, message = "Product code must have 10 characters.")
     private String code ;
 
     @NotBlank(message = "Product description cannot be empty.")
@@ -25,7 +25,7 @@ public class OrderItem {
 
     @NotNull(message = "Price must be provided.")
     @Min(value = 1, message = "Price must be greater than zero.")
-    private Integer priceInCents;
+    private Integer unitPriceInCents;
 
     @NotNull(message = "Quantity must be provided.")
     @Min(value = 1, message = "Quantity must be at least 1.")
