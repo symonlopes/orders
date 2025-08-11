@@ -40,7 +40,7 @@ public class OrderController {
     @GetMapping("/status/{status}")
     public ResponseEntity<List<Order>> findByStatus(
             @PathVariable String status,
-            @RequestParam(name = "limit", defaultValue = "1000") @Min(1) @Max(100000) int limit) {
+            @RequestParam(name = "limit", defaultValue = "1") @Min(1) @Max(1000) int limit) {
 
         log.debug("Fetching up to [{}] ORDERS with status [{}]", limit, status);
         List<Order> orders = orderService.findByStatus(status, limit);

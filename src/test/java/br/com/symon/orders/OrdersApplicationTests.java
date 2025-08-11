@@ -3,6 +3,8 @@ package br.com.symon.orders;
 import br.com.symon.orders.error.ErrorResponse;
 import br.com.symon.orders.model.Order;
 import br.com.symon.orders.model.OrderItem;
+import br.com.symon.orders.model.OrderStatus;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.Test;
@@ -15,9 +17,9 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,9 +38,7 @@ class OrdersApplicationTests {
 	public void shouldNotCreateOrderWithoutItems() throws Exception {
 
 		var order = mockValidOrder();
-
 		order.setItems(null);
-
 		var result = saveOrder(order)
 				.andExpect(status().isBadRequest())
 				.andReturn();
@@ -84,9 +84,7 @@ class OrdersApplicationTests {
 	public void shouldNotCreateOrderWithItemWithoutQuantity() throws Exception {
 
 		var order = mockValidOrder();
-
 		order.getItems().stream().findFirst().ifPresent(item -> {item.setQuantity(0);});
-
 		saveOrder(order)
 				.andExpect(status().isBadRequest())
 				.andReturn();
@@ -96,9 +94,7 @@ class OrdersApplicationTests {
 	public void shouldNotCreateOrderWithItemWithoutPrice() throws Exception {
 
 		var order = mockValidOrder();
-
 		order.getItems().stream().findFirst().ifPresent(item -> {item.setUnitPriceInCents(0);});
-
 		saveOrder(order)
 				.andExpect(status().isBadRequest())
 				.andReturn();
@@ -108,9 +104,7 @@ class OrdersApplicationTests {
 	public void shouldNotCreateOrderWithoutSellerId() throws Exception {
 
 		var order = mockValidOrder();
-
 		order.setSellerId(null);
-
 		saveOrder(order)
 				.andExpect(status().isBadRequest())
 				.andReturn();
@@ -120,9 +114,7 @@ class OrdersApplicationTests {
 	public void shouldNotCreateOrderWithoutCustomerId() throws Exception {
 
 		var order = mockValidOrder();
-
 		order.setCustomerId(null);
-
 		saveOrder(order)
 				.andExpect(status().isBadRequest())
 				.andReturn();
@@ -152,7 +144,7 @@ class OrdersApplicationTests {
 
 		var returnedOrder =  objectMapper.readValue(postResult.getResponse().getContentAsString(), Order.class);
 
-		var getResult = findOrderById(returnedOrder, order)
+		var getResult = findOrderById(returnedOrder.getId())
 				.andExpect(status().isOk())
 				.andReturn();
 
@@ -161,16 +153,43 @@ class OrdersApplicationTests {
 		assertEquals(returnedOrder.getId(),foundedOrder.getId(), "Order id must  be equals");
 	}
 
+	@Test
+	public void shouldGetOrderByStatus() throws Exception {
+
+		var order = mockValidOrder();
+
+		var postResult = saveOrder(order)
+				.andExpect(status().isCreated())
+				.andReturn();
+
+		objectMapper.readValue(postResult.getResponse().getContentAsString(), Order.class);
+
+		var orders = findOrderByStatus(OrderStatus.NEW)
+				.andExpect(status().isOk())
+				.andReturn();
+
+		var foundedOrders = objectMapper.readValue(
+				orders.getResponse().getContentAsString(),
+				new TypeReference<List<Order>>() {}
+		);
+
+        assertFalse(foundedOrders.isEmpty(), "Order id must  be equals");
+	}
+
 	private ResultActions saveOrder(Order order) throws Exception {
 		return mockMvc.perform(post("/api/order")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(objectMapper.writeValueAsString(order)));
 	}
 
-	private ResultActions findOrderById(Order returnedOrder, Order order) throws Exception {
-		return mockMvc.perform(get("/api/order/" + returnedOrder.getId())
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(objectMapper.writeValueAsString(order)));
+	private ResultActions findOrderById(String id) throws Exception {
+		return mockMvc.perform(get("/api/order/" + id)
+				.contentType(MediaType.APPLICATION_JSON));
+	}
+
+	private ResultActions findOrderByStatus(OrderStatus status) throws Exception {
+		return mockMvc.perform(get("/api/order/status/" + status.name() + "?limit=" + 1)
+				.contentType(MediaType.APPLICATION_JSON));
 	}
 
 	private static Order mockValidOrder() {
