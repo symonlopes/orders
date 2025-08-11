@@ -9,6 +9,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,7 +47,10 @@ public class OrderRepository {
                 .toList();
 
         var updateQuery = new Query(Criteria.where("id").in(orderIds));
-        var update = new Update().set("status", newStatus);
+        var now = Instant.now();
+        var update = new Update()
+                .set("status", newStatus)
+                .set("importedAt", now);
 
         mongoTemplate.updateMulti(updateQuery, update, Order.class);
 

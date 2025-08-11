@@ -45,7 +45,7 @@ public class OrderService {
 
         cacheService.saveOrderOnCache(order);
 
-        return order;
+        return savedOrder;
     }
 
     public Optional<Order> findById(String id) {
@@ -56,6 +56,7 @@ public class OrderService {
         PageRequest pageRequest = PageRequest.of(0, limit, Sort.by(Sort.Direction.ASC, "createdAt"));
         return orderRepository.findByStatus(status, pageRequest);
     }
+
     public List<Order> importNewOrders(int limit) {
         return orderRepository.findAndMarkIndividually(OrderStatus.NEW.name(), OrderStatus.IMPORTED.name(), limit);
     }

@@ -28,6 +28,9 @@ public class Order {
     @Field("createdAt")
     private LocalDateTime createdAt;
 
+    @Field("importedAt")
+    private LocalDateTime importedAt;
+
     @NotEmpty(message = "Order must contain at least one item")
     @Builder.Default
     @Valid
